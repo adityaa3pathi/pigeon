@@ -1,6 +1,8 @@
 import FriendRequestSidebarOption from "@/app/components/FriendRequestSidebarOption";
 import { Icon, Icons } from "@/app/components/Icons";
+import SidebarChatList from "@/app/components/SidebarChatList";
 import SignOutButton from "@/app/components/SignOutButton";
+import { getFriendsByUserId } from "@/app/helpers/get-frineds-by-user-d";
 import { fetchRedis } from "@/app/helpers/redis";
 import { authOptions } from "@/app/libs/auth";
 import { getServerSession } from "next-auth";
@@ -37,13 +39,11 @@ const sidebarOptions: SidebarOption[] = [
   },
 ]
 
-
-
-
-
 const Layout = async ({children}: LayoutProps) => {
     const session = await getServerSession(authOptions)
     if(!session) notFound()
+
+        const friends = await getFriendsByUserId(session.user.id)
 
        const unseenRequestCount = ((await fetchRedis('smembers', `user:${session.user.id}:incoming_friend_requests`)) as User[]).length
 
@@ -52,12 +52,12 @@ const Layout = async ({children}: LayoutProps) => {
                 <div className="flex h-full w-full max-w-xs grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
                 <Link href='/dashboard' className="flex h-16 shrink-0 items-center ">
                 <Icons.Logo className="h-8 w-auto text-indigo-600"/></Link>
-                <div className="text-xs font-semibold leading-6 text-gray-400">
+               {friends.length  > 0 ? <div className="text-xs font-semibold leading-6 text-gray-400">
                     Your chats
-                </div>
+                </div> : null}
                 <nav  className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                    <li> //chats will show up here</li>
+                    <li> <SidebarChatList friends={friends} sessionId={session.user.id}/></li>
                     <li>
                     <div className="text-xs font-semibold leading-6 text-gray-400"> Overview</div>
                     <ul className="-mx-2 mt-2 space-y-1" role="list ">
@@ -78,12 +78,13 @@ const Layout = async ({children}: LayoutProps) => {
                                 </li>
                             )
                         })}
+                           <li>
+                        <FriendRequestSidebarOption sessionId={session.user.id} initialUnseenRequestCount={unseenRequestCount}/>
+                    </li>
                     </ul>
                     </li>
 
-                    <li>
-                        <FriendRequestSidebarOption sessionId={session.user.id} initialUnseenRequestCount={unseenRequestCount}/>
-                    </li>
+                 
                     <li className="-mx-6 mt-auto flex items-center">
                         <div className=" flex flex-1 items-center gap-x-4 px-6 py-3 text-sm font-semibold leading-6 text-gray-900">
                             <div className="relative h-8 w-8 bg-gray-50">
