@@ -1,6 +1,11 @@
 import { fetchRedis } from "@/app/helpers/redis"
 import { authOptions } from "@/app/libs/auth"
 import { getServerSession } from "next-auth"
+import {nanoid} from "nanoid"
+import { db } from "@/app/libs/db"
+import { Message, messageValidator } from "@/app/libs/validations/message"
+import { pusherServer } from "@/app/libs/pusher"
+import { toPusherKey } from "@/app/libs/utils"
 
 export async function POST(req: Request) {
     try {
@@ -30,10 +35,33 @@ export async function POST(req: Request) {
 
             const rawSender = await fetchRedis('get', `user:${session.user.id}`) as string
             const sender = JSON.parse(rawSender) as User
-            console.log('sender', sender)
+
+
+            const timestamp = Date.now()
+
+            const  MessageData: Message = {
+                id: nanoid(),
+                senderId: session.user.id,
+                text,
+                timestamp,
+            }
+
+            const message = messageValidator.parse(MessageData)
+
+            pusherServer.trigger(toPusherKey(`chat:${chatId}`), 'incoming-message', message)
+            await db.zadd(`chat:${chatId}:messages`, {
+                score: timestamp,
+                member: JSON.stringify(message)
+            })
+
+            return new Response('OK')
 
     }
     catch(error) {
+        if(error instanceof Error) {
+            return new Response(error.message, {status: 500})
+        } 
 
+        return new Response('internal server error', {status: 500})
     }
 }

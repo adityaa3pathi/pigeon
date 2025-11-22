@@ -1,6 +1,8 @@
 import { fetchRedis } from "@/app/helpers/redis"
 import { authOptions } from "@/app/libs/auth"
 import { db } from "@/app/libs/db"
+import { pusherServer } from "@/app/libs/pusher"
+import { toPusherKey } from "@/app/libs/utils"
 import { addFriendValidator } from "@/app/libs/validations/add-friend"
 import { getServerSession } from "next-auth"
 import z from "zod"
@@ -12,7 +14,9 @@ export async function POST(req: Request) {
     try  {
         const  body = await req.json()
 
-        const {email: emailToAdd} = addFriendValidator.parse(body.email)
+        const {email: emailToAdd} = addFriendValidator.parse(body)
+
+        console.log(emailToAdd)
 
 
         const idToAdd = await fetchRedis('get', `user:email:${emailToAdd}` as string)
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
 
         
         //CHECK IF USER IS ALREADY ADDED
-        const isAlreadyAdded = await fetchRedis('sismember', `user${idToAdd}:incoming_friend_requests`, session.user.id) as 0 | 1
+        const isAlreadyAdded = await fetchRedis('sismember', `user:${idToAdd}:incoming_friend_requests`, session.user.id) as 0 | 1
 
         if (isAlreadyAdded) {
             return new Response('Already added this user', {status: 400 })
@@ -40,13 +44,22 @@ export async function POST(req: Request) {
             `user:${session.user.id}:friends`, idToAdd
         )) as 0 | 1
 
-         if (isAlreadyAdded) {
+         if (isAlreadyFriends) {
             return new Response('Already friends with this user', {status: 400 })
         }
 
 
         //sending friend request after all checks
-
+try {
+        pusherServer.trigger(
+            toPusherKey(`user:${idToAdd}:incoming_friend_requests`), 'incoming_friend_requests', {
+                senderId: session.user.id,
+                senderEmail: session.user.email,
+            })
+    }              // pusherServer.trigger(channel, eventName, data)
+catch(error) {
+    console.log("pusher error:", error)
+}
         db.sadd(`user:${idToAdd}:incoming_friend_requests`, session.user.id)
             console.log('ready')
         return new Response('OK')

@@ -12,24 +12,28 @@ interface ChatInputProps {
 }
 
 const ChatInput: FC<ChatInputProps> = ({chatPartner, chatId}) => {
+  
 
     const textareaRef = useRef<HTMLTextAreaElement | null>(null)
     const [isLoading, setIsLoading] = useState<boolean>(false)
-
+ 
     const [input, setInput] = useState<string>('')
 
     const sendMessage = async () => {
+      if(!input) return
       setIsLoading(true)
 
       setInput('') 
       textareaRef.current?.focus()
 
       try {
-        await axios.post('api/messages/send', {text: input, chatId})
+        await axios.post('/api/messages/send', {text: input, chatId})
         setInput('')
       }
       catch (error) {
-        console.log(error)
+        console.log(input)
+        console.log(chatId)
+        console.log("hi", error)
         toast.error('something went wrong. Please try again later.')
         
 
