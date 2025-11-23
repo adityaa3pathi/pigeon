@@ -34,6 +34,7 @@ export async function POST(req: Request) {
             }
 
             const rawSender = await fetchRedis('get', `user:${session.user.id}`) as string
+            
             const sender = JSON.parse(rawSender) as User
 
 
@@ -48,7 +49,18 @@ export async function POST(req: Request) {
 
             const message = messageValidator.parse(MessageData)
 
+            //notify all connected chat room clients
+
             pusherServer.trigger(toPusherKey(`chat:${chatId}`), 'incoming-message', message)
+
+
+            pusherServer.trigger(toPusherKey(`user:${friendId}:chats`), 'new_message', {
+                ...message,
+                senderImg: sender.image,
+                senderName: sender.name
+            })
+
+            // sending message to db after everything
             await db.zadd(`chat:${chatId}:messages`, {
                 score: timestamp,
                 member: JSON.stringify(message)

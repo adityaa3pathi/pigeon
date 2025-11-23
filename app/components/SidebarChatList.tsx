@@ -2,18 +2,71 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { FC, useEffect, useState } from 'react'
-import { chatHrefConstructor } from '../libs/utils'
+import { chatHrefConstructor, toPusherKey } from '../libs/utils'
+import { pusherClient } from '../libs/pusher'
+import toast from 'react-hot-toast'
+import UNseenChatToast from './UNseenChatToast'
 
 interface SidebarChatListProps {
   friends: User[]
   sessionId: string
 }
 
+
+interface ExtendedMessage extends Message {
+    senderImg: string
+    senderName: string
+}
 const SidebarChatList: FC<SidebarChatListProps> = ({friends, sessionId}) => {
 
     const router = useRouter()
     const pathname = usePathname()
 const [unseenMessages, setUnseenMessages] = useState<Message[]>([])
+
+
+useEffect(() => {
+    pusherClient.subscribe(toPusherKey(`user:${sessionId}:chats`))
+    pusherClient.subscribe(toPusherKey(`user:${sessionId}:friends`))
+
+    const newFriendHandler = () => {
+        router.refresh()
+    }
+
+    const chatHandler = (message: ExtendedMessage) => {
+
+        const shouldNotify = pathname !== `/dashboard/chat/${chatHrefConstructor(sessionId, message.senderId)}`
+        
+        if(!shouldNotify) return
+
+        toast.custom((t) => (
+            <UNseenChatToast
+            t={t}
+            sessionId= {sessionId}
+            senderId={message.senderId}
+            senderImg={message.senderImg}
+            senderMessage={message.text}
+            senderName={message.senderName}
+
+            />
+        ))
+
+        setUnseenMessages((prev) => [...prev, message])
+
+        console.log("new message arrived", message)
+
+    }
+
+    pusherClient.bind('new_message', chatHandler)
+    pusherClient.bind('new_request', newFriendHandler)
+
+
+
+    return () => {
+          pusherClient.unsubscribe(toPusherKey(`user:${sessionId}:chats`))
+          pusherClient.unsubscribe(toPusherKey(`user:${sessionId}:friends`))
+
+    }
+}, [pathname, sessionId, router])
 
 useEffect(() => {
     if(pathname?.includes('chat')) {

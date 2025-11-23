@@ -23,7 +23,7 @@ const FriendRequestSidebarOption: FC<FriendRequestSidebarOptionProps> = ({ initi
     
             const friendRequestHandler = ({  senderId,
                 senderEmail,}: IncomingFriendRequest) => {
-                setUnseenRequestCount((prev) => prev +1)
+                setUnseenRequestCount((prev) => prev +1 )
               
             }
     
