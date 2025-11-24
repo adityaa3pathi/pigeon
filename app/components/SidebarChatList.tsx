@@ -83,10 +83,6 @@ const filteredMessages = useMemo(() => {
   return unseenMessages.filter(msg => !pathname.includes(msg.senderId));
 }, [pathname, unseenMessages]);
 
-useEffect(() => {
-  setUnseenMessages(filteredMessages);
-}, [filteredMessages]);
-
 
 
 // useEffect(() => {

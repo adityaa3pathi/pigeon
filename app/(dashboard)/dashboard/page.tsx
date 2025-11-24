@@ -61,13 +61,13 @@ if(!session) notFound()
                 </div>
                 <div >
                   <h4 className='text-lg font-semibold'>
-                    {friend.name}
+                    {friend.name} </h4>
                     <p className='mt-1 max-w-md'>
 
-                      <span className='text-zinc-400'>{ friend.lastMessage.senderId === session.user.id ? 'you' : '' }</span>
+                      <span className='text-zinc-400'>{ friend.lastMessage.senderId === session.user.id ? 'You:  ' : '' }</span>
                       {friend.lastMessage.text}
                     </p>
-                  </h4>
+                  
                 </div>
               </Link>
 
