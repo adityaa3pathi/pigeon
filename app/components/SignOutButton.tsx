@@ -4,10 +4,9 @@ import { ButtonHTMLAttributes, FC, useState } from 'react'
 import Button from './ui/Button'
 import { signOut } from 'next-auth/react'
 import toast from 'react-hot-toast'
-import { fa } from 'zod/locales'
 import { Loader2, LogOut } from 'lucide-react'
 
-interface SignOutButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {}
+type SignOutButtonProps = ButtonHTMLAttributes<HTMLButtonElement> 
 
 const SignOutButton: FC<SignOutButtonProps> = ({ ...props}) => {
 
@@ -18,7 +17,7 @@ const SignOutButton: FC<SignOutButtonProps> = ({ ...props}) => {
     try {
         await signOut()
     }
-    catch (error) {
+    catch {
         toast.error('There was a problem signing out')
     }
     finally {

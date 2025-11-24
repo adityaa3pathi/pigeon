@@ -5,12 +5,10 @@ import Button from '../components/ui/Button'
 import { signIn } from 'next-auth/react'
 import toast from 'react-hot-toast'
 
-interface pageProps {
-}
 
 
 
-const page: FC<pageProps> = ({}) => {
+const Page = ({}) => {
 
 async function loginWithGoogle() {
     setIsLoading(true)
@@ -77,4 +75,4 @@ async function loginWithGoogle() {
   </div>
 }
 
-export default page
+export default Page

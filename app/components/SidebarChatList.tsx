@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname, useRouter } from 'next/navigation'
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
 import { chatHrefConstructor, toPusherKey } from '../libs/utils'
 import { pusherClient } from '../libs/pusher'
 import toast from 'react-hot-toast'
@@ -25,6 +25,8 @@ const [unseenMessages, setUnseenMessages] = useState<Message[]>([])
 
 
 useEffect(() => {
+
+    if(!sessionId) return
     pusherClient.subscribe(toPusherKey(`user:${sessionId}:chats`))
     pusherClient.subscribe(toPusherKey(`user:${sessionId}:friends`))
 
@@ -65,16 +67,39 @@ useEffect(() => {
           pusherClient.unsubscribe(toPusherKey(`user:${sessionId}:chats`))
           pusherClient.unsubscribe(toPusherKey(`user:${sessionId}:friends`))
 
+          pusherClient.unbind('new_message', chatHandler)
+          pusherClient.unbind('new_request', newFriendHandler)
+ 
     }
 }, [pathname, sessionId, router])
 
+
+
+
+const isChatPage = pathname?.includes("chat");
+
+const filteredMessages = useMemo(() => {
+  if (!isChatPage) return unseenMessages;
+  return unseenMessages.filter(msg => !pathname.includes(msg.senderId));
+}, [pathname, unseenMessages]);
+
 useEffect(() => {
-    if(pathname?.includes('chat')) {
-        setUnseenMessages((prev) => {
-            return prev.filter((msg) => !pathname.includes(msg.senderId))
-        })
-    }
-}, [pathname]) // daymn this logic is goooood
+  setUnseenMessages(filteredMessages);
+}, [filteredMessages]);
+
+
+
+// useEffect(() => {
+
+//     if(!pathname) return 
+//     if(pathname?.includes('chat')) {
+//         setUnseenMessages((prev) => {
+//             return prev.filter((msg) => !pathname.includes(msg.senderId))
+//         })
+//     }
+// }, [pathname]) // daymn this logic is goooood
+
+
   return <ul role='list' className='max-h-100 overflow-y-auto -mx-2 space-y-1'>
   {friends.sort().map((friend) => {
 
@@ -88,7 +113,7 @@ useEffect(() => {
             sessionId,
             friend.id
         )}`} 
-        className='text-gray-700 hover: text-indigo-600 hover:bg-gray-50 group flex items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold '
+        className='text-gray-600 hover:text-indigo-600 hover:bg-gray-50 group flex items-center gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold '
         >{friend.name}
         {unSeenMessagesCount > 0 ? <div className='bg-indigo-600 font-medium text-xs text-white w-4 h-4 rounded-full flex justify-center items-center' >{unSeenMessagesCount}</div> : null}
         </a>
