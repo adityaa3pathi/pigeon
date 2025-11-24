@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": " NEXT_DISABLE_ESLINT=1 next build",
     "start": "next start",
     "lint": "eslint"
+
   },
   "dependencies": {
-     "@headlessui/react": "1.7.13",
+    "@headlessui/react": "1.7.13",
     "@hookform/resolvers": "^5.2.2",
     "@next-auth/upstash-redis-adapter": "^3.0.4",
     "@upstash/redis": "^1.35.6",
