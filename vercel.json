@@ -1,0 +1,3 @@
+{
+  "buildCommand": "pnpm install --prod && pnpm build"
+}
