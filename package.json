@@ -52,5 +52,8 @@
   },
   "eslintConfig": {
     "root": true
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
