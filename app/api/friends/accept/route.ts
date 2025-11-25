@@ -2,6 +2,8 @@
 import { fetchRedis } from "@/app/helpers/redis"
 import { authOptions } from "@/app/libs/auth"
 import { db } from "@/app/libs/db"
+import { pusherServer } from "@/app/libs/pusher"
+import { toPusherKey } from "@/app/libs/utils"
 import { getServerSession } from "next-auth"
 import z from "zod"
 
@@ -22,20 +24,39 @@ try {
     const isAlreadyFriends = await fetchRedis('sismember', `users:${session.user.id}:friends`, idToAdd)
 
     if(isAlreadyFriends) return new Response('Already Added', {status: 400})
-  
 
-        const hasAlreadyRequest = await fetchRedis('sismember',  `user:${session.user.id}:incoming_friend_requests`, idToAdd)
+
+        
+           const hasAlreadyRequest = await fetchRedis('sismember',  `user:${session.user.id}:incoming_friend_requests`, idToAdd)
 
         if(!hasAlreadyRequest) {
             return new Response('NO friend request', {status: 400})
         }
 
 
-        await db.sadd(`user:${session.user.id}:friends`, idToAdd)
-        await db.sadd(`user:${idToAdd}:friends`, session.user.id)
 
-        await db.srem(`user:${session.user.id}:incoming_friend_requests`, idToAdd     
-        )
+
+        const [userRaw, friendRaw] = (await Promise.all([
+            fetchRedis('get', `user:${session.user.id}`),
+            fetchRedis('get', `user:${idToAdd}`)
+        ])) as [string, string]
+
+        const user = JSON.parse(userRaw)  as User
+        const friend = JSON.parse(friendRaw)  as User
+
+        await Promise.all([
+            pusherServer.trigger(toPusherKey(`user:${idToAdd}:friends`), 'new_friend', user),
+            pusherServer.trigger(toPusherKey(`user:${session.user.id}:friends`), 'new_friend', friend),
+            db.sadd(`user:${session.user.id}:friends`, idToAdd),
+         db.sadd(`user:${idToAdd}:friends`, session.user.id),
+         db.srem(`user:${session.user.id}:incoming_friend_requests`, idToAdd) 
+
+        ])
+  
+
+     
+         
+        
         console.log('job finished')
         return new Response('OK')
 }
